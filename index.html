@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2026一直喝🧋</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap');
+        body { font-family: 'Noto Sans TC', sans-serif; background-color: #F1F5F9; }
+        .tab-content { display: none; opacity: 0; transition: all 0.4s ease; }
+        .tab-content.active { display: block; opacity: 1; }
+        .calendar-btn.selected { background-color: #2563eb; color: white; transform: scale(1.1); z-index: 10; }
+    </style>
+</head>
+<body class="pb-12 text-[#334155]">
+
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-50 px-4 py-4 shadow-sm">
+        <div class="max-w-4xl mx-auto flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <div class="bg-blue-600 p-1.5 rounded-lg text-white"><i data-lucide="coffee" class="w-5 h-5"></i></div>
+                <h1 class="text-xl font-black tracking-tight text-[#1E293B]">2026一直喝🧋</h1>
+            </div>
+            <button onclick="document.getElementById('input-section').scrollIntoView({behavior: 'smooth'})" 
+                    class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-full text-sm font-bold flex items-center gap-2">
+                <i data-lucide="plus" class="w-4 h-4"></i> 新增飲品
+            </button>
+        </div>
+    </header>
+
+    <main class="max-w-4xl mx-auto px-4 mt-6">
+        <div class="grid grid-cols-2 gap-4 mb-6">
+            <div class="bg-white p-5 rounded-[2rem] shadow-sm flex items-center gap-4">
+                <div class="bg-blue-50 p-3 rounded-2xl text-blue-500"><i data-lucide="trending-up" class="w-5 h-5"></i></div>
+                <div><p class="text-[10px] font-bold text-slate-400 uppercase">今日支出</p><p id="today-total" class="text-xl font-black text-blue-600">$0</p></div>
+            </div>
+            <div class="bg-white p-5 rounded-[2rem] shadow-sm flex items-center gap-4">
+                <div class="bg-slate-50 p-3 rounded-2xl text-slate-500"><i data-lucide="credit-card" class="w-5 h-5"></i></div>
+                <div><p class="text-[10px] font-bold text-slate-400 uppercase">本月消費</p><p id="month-total" class="text-xl font-black text-slate-700">$0</p></div>
+            </div>
+        </div>
+
+        <section id="input-section" class="bg-white rounded-[2.5rem] p-7 shadow-sm border border-slate-200 mb-8">
+            <div class="flex items-center gap-3 mb-6">
+                <div class="bg-blue-500 w-1.5 h-6 rounded-full"></div>
+                <h2 id="display-date" class="font-bold text-lg text-slate-700">載入中...</h2>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <input type="text" id="shop-name" placeholder="店家名稱" class="bg-slate-50 border-none rounded-2xl p-4 outline-none">
+                <input type="text" id="item-name" placeholder="飲品項" class="bg-slate-50 border-none rounded-2xl p-4 outline-none">
+                <input type="number" id="price" placeholder="金額" class="bg-slate-50 border-none rounded-2xl p-4 outline-none">
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                <div><label class="text-[10px] font-bold text-slate-400 block mb-2">冰塊</label><div id="ice-options" class="flex flex-wrap gap-1.5"></div></div>
+                <div><label class="text-[10px] font-bold text-slate-400 block mb-2">甜度</label><div id="sugar-options" class="flex flex-wrap gap-1.5"></div></div>
+            </div>
+            <button onclick="saveRecord()" class="w-full bg-blue-600 text-white py-4 rounded-2xl font-bold">確認存檔</button>
+        </section>
+
+        <div class="flex bg-slate-200/60 p-1.5 rounded-[1.5rem] mb-6">
+            <button id="btn-calendar" onclick="switchTab('calendar')" class="flex-1 py-3.5 rounded-xl font-bold bg-white shadow text-blue-600">日曆</button>
+            <button id="btn-list" onclick="switchTab('list')" class="flex-1 py-3.5 rounded-xl font-bold text-slate-500">清單總覽</button>
+        </div>
+
+        <div id="tab-calendar" class="tab-content active">
+            <div class="bg-white rounded-[2.5rem] shadow-sm border border-slate-200 overflow-hidden">
+                <div class="bg-[#1E293B] p-6 text-white flex justify-between items-center">
+                    <button onclick="changeMonth(-1)"><i data-lucide="chevron-left"></i></button>
+                    <h3 id="calendar-title" class="font-bold">2026年 1月</h3>
+                    <button onclick="changeMonth(1)"><i data-lucide="chevron-right"></i></button>
+                </div>
+                <div class="p-8"><div id="calendar-grid" class="grid grid-cols-7 gap-3 text-center"></div></div>
+            </div>
+        </div>
+
+        <div id="tab-list" class="tab-content">
+            <div class="bg-white rounded-[2.5rem] shadow-sm border border-slate-200 overflow-hidden min-h-[400px]" id="list-container"></div>
+        </div>
+    </main>
+
+    <script>
+        let currentDate = new Date(2026, 0, 1);
+        let selectedDateString = new Date().toDateString();
+        let allRecords = JSON.parse(localStorage.getItem('drink_records_2026')) || [];
+        let currentIce = '正常', currentSugar = '全糖';
+        const ICE_OPTIONS = ['正常', '少冰', '微冰', '去冰', '常溫', '溫', '不能調整'];
+        const SUGAR_OPTIONS = ['全糖', '少糖', '半糖', '微糖', '一分糖', '無糖', '不能調整'];
+
+        window.onload = () => { lucide.createIcons(); renderOptions(); renderCalendar(); updateDisplayDate(); renderList(); updateStats(); };
+
+        function switchTab(tab) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.getElementById(`tab-${tab}`).classList.add('active');
+            document.getElementById('btn-calendar').className = tab==='calendar' ? "flex-1 py-3.5 rounded-xl font-bold bg-white shadow text-blue-600" : "flex-1 py-3.5 rounded-xl font-bold text-slate-500";
+            document.getElementById('btn-list').className = tab==='list' ? "flex-1 py-3.5 rounded-xl font-bold bg-white shadow text-blue-600" : "flex-1 py-3.5 rounded-xl font-bold text-slate-500";
+        }
+
+        function renderOptions() {
+            document.getElementById('ice-options').innerHTML = ICE_OPTIONS.map(o => `<button onclick="currentIce='${o}';renderOptions()" class="px-3 py-2 text-xs rounded-xl border ${currentIce===o?'bg-blue-600 text-white':'bg-white text-slate-500'}">${o}</button>`).join('');
+            document.getElementById('sugar-options').innerHTML = SUGAR_OPTIONS.map(o => `<button onclick="currentSugar='${o}';renderOptions()" class="px-3 py-2 text-xs rounded-xl border ${currentSugar===o?'bg-slate-700 text-white':'bg-white text-slate-500'}">${o}</button>`).join('');
+        }
+
+        function renderCalendar() {
+            const grid = document.getElementById('calendar-grid');
+            document.getElementById('calendar-title').innerText = `2026年 ${currentDate.getMonth()+1}月`;
+            grid.innerHTML = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(d=>`<div class="text-[10px] font-bold text-slate-300 mb-2">${d}</div>`).join('');
+            const startDay = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1).getDay();
+            const totalDays = new Date(currentDate.getFullYear(), currentDate.getMonth()+1, 0).getDate();
+            for(let i=0; i<startDay; i++) grid.innerHTML += '<div></div>';
+            for(let d=1; d<=totalDays; d++) {
+                const dateStr = new Date(currentDate.getFullYear(), currentDate.getMonth(), d).toDateString();
+                const hasData = allRecords.some(r=>r.date===dateStr);
+                grid.innerHTML += `<button onclick="selectedDateString='${dateStr}';renderCalendar();updateDisplayDate();updateStats()" class="h-12 rounded-2xl flex flex-col items-center justify-center ${selectedDateString===dateStr?'bg-blue-600 text-white shadow-lg':''}"><span class="font-bold">${d}</span>${hasData?`<span class="w-1 h-1 rounded-full bg-current mt-1"></span>`:''}</button>`;
+            }
+        }
+
+        function changeMonth(offset) { currentDate.setMonth(currentDate.getMonth()+offset); renderCalendar(); }
+        function updateDisplayDate() { document.getElementById('display-date').innerText = new Date(selectedDateString).toLocaleDateString('zh-TW', {month:'long',day:'numeric',weekday:'short'}); }
+        
+        function saveRecord() {
+            const shop = document.getElementById('shop-name').value, item = document.getElementById('item-name').value, price = document.getElementById('price').value;
+            if(!shop || !item || !price) return;
+            allRecords.unshift({ id: Date.now(), date: selectedDateString, shopName: shop, itemName: item, price: Number(price), ice: currentIce, sugar: currentSugar });
+            localStorage.setItem('drink_records_2026', JSON.stringify(allRecords));
+            document.getElementById('shop-name').value = ''; document.getElementById('item-name').value = ''; document.getElementById('price').value = '';
+            renderCalendar(); renderList(); updateStats();
+        }
+
+        function deleteRecord(id) { allRecords = allRecords.filter(r=>r.id!==id); localStorage.setItem('drink_records_2026', JSON.stringify(allRecords)); renderCalendar(); renderList(); updateStats(); }
+
+        function renderList() {
+            const container = document.getElementById('list-container');
+            container.innerHTML = allRecords.length === 0 ? `<div class="py-20 text-center text-slate-300">目前尚無紀錄</div>` : 
+                `<div class="divide-y divide-slate-50">${allRecords.map(r=>`<div class="p-6 flex justify-between items-center"><div><h4 class="font-bold">${r.itemName}</h4><p class="text-xs text-slate-400">${r.shopName} · ${r.ice}/${r.sugar}</p></div><div class="flex items-center gap-4"><span class="font-black text-lg">$${r.price}</span><button onclick="deleteRecord(${r.id})" class="text-slate-200 hover:text-red-500"><i data-lucide="trash-2" class="w-5 h-5"></i></button></div></div>`).join('')}</div>`;
+            lucide.createIcons();
+        }
+
+        function updateStats() {
+            const today = allRecords.filter(r=>r.date===selectedDateString).reduce((s,r)=>s+r.price, 0);
+            const month = allRecords.filter(r=>new Date(r.date).getMonth()===currentDate.getMonth()).reduce((s,r)=>s+r.price, 0);
+            document.getElementById('today-total').innerText = `$${today}`;
+            document.getElementById('month-total').innerText = `$${month}`;
+        }
+    </script>
+</body>
+</html>
+
