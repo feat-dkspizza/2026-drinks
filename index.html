@@ -2,145 +2,330 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>2026一直喝🧋</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>🧋手搖一直喝</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap');
-        body { font-family: 'Noto Sans TC', sans-serif; background-color: #F1F5F9; }
-        .tab-content { display: none; opacity: 0; transition: all 0.4s ease; }
-        .tab-content.active { display: block; opacity: 1; }
-        .calendar-btn.selected { background-color: #2563eb; color: white; transform: scale(1.1); z-index: 10; }
+        body { 
+            font-family: 'Noto Sans TC', sans-serif; 
+            background-color: #F1F5F9; 
+            -webkit-tap-highlight-color: transparent; 
+        }
+        .tab-content { display: none; opacity: 0; transform: translateY(10px); transition: all 0.3s ease; }
+        .tab-content.active { display: block; opacity: 1; transform: translateY(0); }
+        #shop-dropdown { max-height: 200px; overflow-y: auto; z-index: 100; }
+        input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+        .blue-gradient { background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%); }
     </style>
 </head>
-<body class="pb-12 text-[#334155]">
+<body class="pb-24 text-slate-700">
 
-    <header class="bg-white border-b border-slate-200 sticky top-0 z-50 px-4 py-4 shadow-sm">
-        <div class="max-w-4xl mx-auto flex items-center justify-between">
+    <header class="bg-white/90 backdrop-blur-md border-b border-slate-200 sticky top-0 z-50 px-4 py-4 shadow-sm">
+        <div class="max-w-md mx-auto flex items-center justify-between">
             <div class="flex items-center gap-2">
-                <div class="bg-blue-600 p-1.5 rounded-lg text-white"><i data-lucide="coffee" class="w-5 h-5"></i></div>
-                <h1 class="text-xl font-black tracking-tight text-[#1E293B]">2026一直喝🧋</h1>
+                <div class="bg-slate-800 p-1.5 rounded-lg text-white">
+                    <i data-lucide="coffee" class="w-5 h-5"></i>
+                </div>
+                <h1 class="text-xl font-black tracking-tight text-slate-800">手搖一直喝</h1>
             </div>
-            <button onclick="document.getElementById('input-section').scrollIntoView({behavior: 'smooth'})" 
-                    class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-full text-sm font-bold flex items-center gap-2">
-                <i data-lucide="plus" class="w-4 h-4"></i> 新增飲品
-            </button>
+            <!-- 右上角按鈕已移除 -->
         </div>
     </header>
 
-    <main class="max-w-4xl mx-auto px-4 mt-6">
-        <div class="grid grid-cols-2 gap-4 mb-6">
-            <div class="bg-white p-5 rounded-[2rem] shadow-sm flex items-center gap-4">
-                <div class="bg-blue-50 p-3 rounded-2xl text-blue-500"><i data-lucide="trending-up" class="w-5 h-5"></i></div>
-                <div><p class="text-[10px] font-bold text-slate-400 uppercase">今日支出</p><p id="today-total" class="text-xl font-black text-blue-600">$0</p></div>
+    <main class="max-w-md mx-auto p-4 space-y-6">
+        
+        <!-- Dashboard -->
+        <div class="grid grid-cols-2 gap-3">
+            <div class="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm">
+                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">今日飲用</p>
+                <p id="today-count" class="text-2xl font-black text-blue-600">0 杯</p>
             </div>
-            <div class="bg-white p-5 rounded-[2rem] shadow-sm flex items-center gap-4">
-                <div class="bg-slate-50 p-3 rounded-2xl text-slate-500"><i data-lucide="credit-card" class="w-5 h-5"></i></div>
-                <div><p class="text-[10px] font-bold text-slate-400 uppercase">本月消費</p><p id="month-total" class="text-xl font-black text-slate-700">$0</p></div>
+            <div class="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm">
+                <p id="month-label" class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">本月累計</p>
+                <p id="month-count" class="text-2xl font-black text-slate-500">0 杯</p>
             </div>
         </div>
 
-        <section id="input-section" class="bg-white rounded-[2.5rem] p-7 shadow-sm border border-slate-200 mb-8">
-            <div class="flex items-center gap-3 mb-6">
-                <div class="bg-blue-500 w-1.5 h-6 rounded-full"></div>
-                <h2 id="display-date" class="font-bold text-lg text-slate-700">載入中...</h2>
+        <!-- Input Area -->
+        <section id="input-area" class="bg-white rounded-[2rem] p-6 shadow-sm border border-slate-100 space-y-4">
+            <div class="flex items-center justify-between mb-2">
+                <h2 id="display-date" class="font-bold text-blue-600 text-sm"></h2>
+                <span class="text-[10px] font-bold bg-slate-100 text-slate-500 px-2 py-1 rounded-lg">NEW RECORD</span>
             </div>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                <input type="text" id="shop-name" placeholder="店家名稱" class="bg-slate-50 border-none rounded-2xl p-4 outline-none">
-                <input type="text" id="item-name" placeholder="飲品項" class="bg-slate-50 border-none rounded-2xl p-4 outline-none">
-                <input type="number" id="price" placeholder="金額" class="bg-slate-50 border-none rounded-2xl p-4 outline-none">
+            
+            <div class="grid grid-cols-2 gap-3">
+                <div class="space-y-1 relative">
+                    <label class="text-[10px] font-black text-slate-400 ml-1">店家</label>
+                    <input type="text" id="shop-name" onfocus="showShopDropdown()" onblur="hideShopDropdown()" placeholder="選擇或輸入" class="w-full bg-slate-50 rounded-xl p-4 outline-none border border-slate-100 focus:border-blue-400 transition-all">
+                    <div id="shop-dropdown" class="hidden absolute left-0 right-0 top-full mt-2 bg-white border border-slate-200 rounded-xl shadow-xl z-50 overflow-hidden">
+                        <div id="shop-list-items" class="flex flex-col"></div>
+                    </div>
+                </div>
+                <div class="space-y-1">
+                    <label class="text-[10px] font-black text-slate-400 ml-1">價格 (可為0)</label>
+                    <input type="number" id="price" placeholder="0" class="w-full bg-slate-50 rounded-xl p-4 outline-none border border-slate-100 focus:border-blue-400 transition-all">
+                </div>
             </div>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                <div><label class="text-[10px] font-bold text-slate-400 block mb-2">冰塊</label><div id="ice-options" class="flex flex-wrap gap-1.5"></div></div>
-                <div><label class="text-[10px] font-bold text-slate-400 block mb-2">甜度</label><div id="sugar-options" class="flex flex-wrap gap-1.5"></div></div>
+            <div class="space-y-1">
+                <label class="text-[10px] font-black text-slate-400 ml-1">品項</label>
+                <input type="text" id="item-name" placeholder="喝了什麼好滋味？" class="w-full bg-slate-50 rounded-xl p-4 outline-none border border-slate-100 focus:border-blue-400 transition-all">
             </div>
-            <button onclick="saveRecord()" class="w-full bg-blue-600 text-white py-4 rounded-2xl font-bold">確認存檔</button>
+            
+            <div class="grid grid-cols-2 gap-4 py-2">
+                <div>
+                    <p class="text-[10px] font-black text-slate-400 ml-1 mb-2">冰塊</p>
+                    <div id="ice-options" class="flex flex-wrap gap-1.5"></div>
+                </div>
+                <div>
+                    <p class="text-[10px] font-black text-slate-400 ml-1 mb-2">甜度</p>
+                    <div id="sugar-options" class="flex flex-wrap gap-1.5"></div>
+                </div>
+            </div>
+
+            <button onclick="saveRecord()" class="w-full blue-gradient text-white py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-2 transition-all shadow-lg active:scale-[0.98]">
+                <i data-lucide="plus" class="w-5 h-5"></i> 紀錄飲品
+            </button>
         </section>
 
-        <div class="flex bg-slate-200/60 p-1.5 rounded-[1.5rem] mb-6">
-            <button id="btn-calendar" onclick="switchTab('calendar')" class="flex-1 py-3.5 rounded-xl font-bold bg-white shadow text-blue-600">日曆</button>
-            <button id="btn-list" onclick="switchTab('list')" class="flex-1 py-3.5 rounded-xl font-bold text-slate-500">清單總覽</button>
-        </div>
+        <!-- Tabs Navigation -->
+        <nav class="flex bg-slate-200 p-1 rounded-2xl sticky top-20 z-40">
+            <button id="nav-calendar" onclick="switchTab('calendar')" class="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-bold transition-all bg-white shadow-sm text-blue-600">
+                <i data-lucide="calendar" class="w-4 h-4"></i> 日曆
+            </button>
+            <button id="nav-list" onclick="switchTab('list')" class="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-bold transition-all text-slate-500">
+                <i data-lucide="layers" class="w-4 h-4"></i> 清單
+            </button>
+            <button id="nav-stats" onclick="switchTab('stats')" class="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-bold transition-all text-slate-500">
+                <i data-lucide="pie-chart" class="w-4 h-4"></i> 統計
+            </button>
+        </nav>
 
-        <div id="tab-calendar" class="tab-content active">
-            <div class="bg-white rounded-[2.5rem] shadow-sm border border-slate-200 overflow-hidden">
-                <div class="bg-[#1E293B] p-6 text-white flex justify-between items-center">
-                    <button onclick="changeMonth(-1)"><i data-lucide="chevron-left"></i></button>
-                    <h3 id="calendar-title" class="font-bold">2026年 1月</h3>
-                    <button onclick="changeMonth(1)"><i data-lucide="chevron-right"></i></button>
+        <!-- Pages -->
+        <div id="tab-calendar" class="tab-content active space-y-4">
+            <div class="bg-white rounded-[2rem] shadow-sm border border-slate-100 overflow-hidden">
+                <div class="bg-slate-800 p-5 text-white flex justify-between items-center">
+                    <button onclick="changeMonth(-1)" class="p-2 hover:bg-slate-700 rounded-full"><i data-lucide="chevron-left"></i></button>
+                    <h3 id="calendar-title" class="font-bold tracking-widest"></h3>
+                    <button onclick="changeMonth(1)" class="p-2 hover:bg-slate-700 rounded-full"><i data-lucide="chevron-right"></i></button>
                 </div>
-                <div class="p-8"><div id="calendar-grid" class="grid grid-cols-7 gap-3 text-center"></div></div>
+                <div class="p-6">
+                    <div id="calendar-grid" class="grid grid-cols-7 gap-1 text-center"></div>
+                </div>
             </div>
         </div>
 
-        <div id="tab-list" class="tab-content">
-            <div class="bg-white rounded-[2.5rem] shadow-sm border border-slate-200 overflow-hidden min-h-[400px]" id="list-container"></div>
+        <div id="tab-list" class="tab-content space-y-3">
+            <div id="list-container" class="space-y-3"></div>
         </div>
+
+        <!-- Statistics Content -->
+        <div id="tab-stats" class="tab-content space-y-6">
+            <div class="bg-white rounded-[2rem] p-6 shadow-sm border border-slate-100">
+                <h3 class="font-bold text-slate-800 mb-6 flex items-center gap-2">
+                    <i data-lucide="trending-up" class="w-5 h-5 text-blue-500"></i> 本月飲用趨勢
+                </h3>
+                <div class="h-64"><canvas id="monthLineChart"></canvas></div>
+            </div>
+
+            <div class="bg-white rounded-[2rem] p-6 shadow-sm border border-slate-100">
+                <h3 class="font-bold text-slate-800 mb-6 flex items-center gap-2">
+                    <i data-lucide="bar-chart-3" class="w-5 h-5 text-slate-500"></i> <span id="year-stats-title"></span> 年度杯數
+                </h3>
+                <div class="h-64"><canvas id="yearBarChart"></canvas></div>
+            </div>
+
+            <div class="bg-white rounded-[2rem] p-6 shadow-sm border border-slate-100">
+                <h3 class="font-bold text-slate-800 mb-6 flex items-center gap-2">
+                    <i data-lucide="award" class="w-5 h-5 text-blue-600"></i> <span id="shop-stats-title"></span> 年度愛店排行
+                </h3>
+                <div class="h-72"><canvas id="shopPieChart"></canvas></div>
+            </div>
+        </div>
+
     </main>
 
     <script>
-        let currentDate = new Date(2026, 0, 1);
-        let selectedDateString = new Date().toDateString();
-        let allRecords = JSON.parse(localStorage.getItem('drink_records_2026')) || [];
-        let currentIce = '正常', currentSugar = '全糖';
-        const ICE_OPTIONS = ['正常', '少冰', '微冰', '去冰', '常溫', '溫', '不能調整'];
-        const SUGAR_OPTIONS = ['全糖', '少糖', '半糖', '微糖', '一分糖', '無糖', '不能調整'];
+        let viewDate = new Date();
+        let selectedDateStr = new Date().toDateString();
+        let records = JSON.parse(localStorage.getItem('drink_pro_v3')) || [];
+        let ice = '少冰', sugar = '微糖';
+        let yearBarChart, shopPieChart, monthLineChart;
 
-        window.onload = () => { lucide.createIcons(); renderOptions(); renderCalendar(); updateDisplayDate(); renderList(); updateStats(); };
+        const ICE_LIST = ['正常冰', '少冰', '微冰', '去冰', '固定'];
+        const SUGAR_LIST = ['全糖', '半糖', '微糖', '無糖', '固定'];
 
-        function switchTab(tab) {
-            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-            document.getElementById(`tab-${tab}`).classList.add('active');
-            document.getElementById('btn-calendar').className = tab==='calendar' ? "flex-1 py-3.5 rounded-xl font-bold bg-white shadow text-blue-600" : "flex-1 py-3.5 rounded-xl font-bold text-slate-500";
-            document.getElementById('btn-list').className = tab==='list' ? "flex-1 py-3.5 rounded-xl font-bold bg-white shadow text-blue-600" : "flex-1 py-3.5 rounded-xl font-bold text-slate-500";
+        window.onload = () => { init(); };
+
+        function init() {
+            updateDisplayDate();
+            renderOptions();
+            renderCalendar();
+            renderList();
+            updateDashboard();
+            initCharts();
+            lucide.createIcons();
         }
 
+        function switchTab(tab) {
+            document.querySelectorAll('.tab-content').forEach(e => e.classList.remove('active'));
+            document.getElementById(`tab-${tab}`).classList.add('active');
+            ['calendar', 'list', 'stats'].forEach(n => {
+                const btn = document.getElementById(`nav-${n}`);
+                btn.className = (n === tab) ? "flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-bold bg-white shadow-sm text-blue-600" : "flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-slate-500";
+            });
+            if(tab === 'stats') updateCharts();
+            lucide.createIcons();
+        }
+
+        function showShopDropdown() {
+            const list = document.getElementById('shop-list-items');
+            const history = [...new Set(records.map(r => r.shop))].filter(s => s);
+            if(history.length === 0) return;
+            list.innerHTML = history.map(s => `<button onmousedown="selectShop('${s}')" class="px-4 py-3 text-left hover:bg-slate-50 text-sm font-medium border-b border-slate-50 last:border-0">${s}</button>`).join('');
+            document.getElementById('shop-dropdown').classList.remove('hidden');
+        }
+        function hideShopDropdown() { setTimeout(() => document.getElementById('shop-dropdown').classList.add('hidden'), 200); }
+        function selectShop(name) { document.getElementById('shop-name').value = name; }
+
         function renderOptions() {
-            document.getElementById('ice-options').innerHTML = ICE_OPTIONS.map(o => `<button onclick="currentIce='${o}';renderOptions()" class="px-3 py-2 text-xs rounded-xl border ${currentIce===o?'bg-blue-600 text-white':'bg-white text-slate-500'}">${o}</button>`).join('');
-            document.getElementById('sugar-options').innerHTML = SUGAR_OPTIONS.map(o => `<button onclick="currentSugar='${o}';renderOptions()" class="px-3 py-2 text-xs rounded-xl border ${currentSugar===o?'bg-slate-700 text-white':'bg-white text-slate-500'}">${o}</button>`).join('');
+            document.getElementById('ice-options').innerHTML = ICE_LIST.map(o => `<button onclick="ice='${o}';renderOptions()" class="px-2 py-1.5 rounded-lg border text-[10px] transition-all ${ice===o?'bg-blue-600 text-white border-blue-600 font-bold':'bg-white text-slate-400 border-slate-100'}">${o}</button>`).join('');
+            document.getElementById('sugar-options').innerHTML = SUGAR_LIST.map(o => `<button onclick="sugar='${o}';renderOptions()" class="px-2 py-1.5 rounded-lg border text-[10px] transition-all ${sugar===o?'bg-slate-800 text-white border-slate-800 font-bold':'bg-white text-slate-400 border-slate-100'}">${o}</button>`).join('');
         }
 
         function renderCalendar() {
             const grid = document.getElementById('calendar-grid');
-            document.getElementById('calendar-title').innerText = `2026年 ${currentDate.getMonth()+1}月`;
-            grid.innerHTML = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(d=>`<div class="text-[10px] font-bold text-slate-300 mb-2">${d}</div>`).join('');
-            const startDay = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1).getDay();
-            const totalDays = new Date(currentDate.getFullYear(), currentDate.getMonth()+1, 0).getDate();
+            document.getElementById('calendar-title').innerText = `${viewDate.getFullYear()} / ${viewDate.getMonth()+1}`;
+            grid.innerHTML = '日一二三四五六'.split('').map(d=>`<div class="text-[10px] font-bold text-slate-300 py-3">${d}</div>`).join('');
+            const startDay = new Date(viewDate.getFullYear(), viewDate.getMonth(), 1).getDay();
+            const totalDays = new Date(viewDate.getFullYear(), viewDate.getMonth()+1, 0).getDate();
             for(let i=0; i<startDay; i++) grid.innerHTML += '<div></div>';
-            for(let d=1; d<=totalDays; d++) {
-                const dateStr = new Date(currentDate.getFullYear(), currentDate.getMonth(), d).toDateString();
-                const hasData = allRecords.some(r=>r.date===dateStr);
-                grid.innerHTML += `<button onclick="selectedDateString='${dateStr}';renderCalendar();updateDisplayDate();updateStats()" class="h-12 rounded-2xl flex flex-col items-center justify-center ${selectedDateString===dateStr?'bg-blue-600 text-white shadow-lg':''}"><span class="font-bold">${d}</span>${hasData?`<span class="w-1 h-1 rounded-full bg-current mt-1"></span>`:''}</button>`;
+            for(let d=1; d<=totalDays; d++){
+                const dStr = new Date(viewDate.getFullYear(), viewDate.getMonth(), d).toDateString();
+                const count = records.filter(r => r.date === dStr).length;
+                const isSel = selectedDateStr === dStr;
+                grid.innerHTML += `
+                    <button onclick="selectedDateStr='${dStr}';init()" class="h-10 relative rounded-xl flex items-center justify-center transition-all ${isSel?'bg-blue-600 text-white font-bold':'text-slate-600 hover:bg-slate-50'}">
+                        <span>${d}</span>
+                        ${count > 0 ? `<span class="absolute bottom-1 px-1 h-3 bg-blue-300 text-[8px] text-white rounded-full flex items-center justify-center font-bold">${count}</span>` : ''}
+                    </button>`;
             }
         }
 
-        function changeMonth(offset) { currentDate.setMonth(currentDate.getMonth()+offset); renderCalendar(); }
-        function updateDisplayDate() { document.getElementById('display-date').innerText = new Date(selectedDateString).toLocaleDateString('zh-TW', {month:'long',day:'numeric',weekday:'short'}); }
-        
-        function saveRecord() {
-            const shop = document.getElementById('shop-name').value, item = document.getElementById('item-name').value, price = document.getElementById('price').value;
-            if(!shop || !item || !price) return;
-            allRecords.unshift({ id: Date.now(), date: selectedDateString, shopName: shop, itemName: item, price: Number(price), ice: currentIce, sugar: currentSugar });
-            localStorage.setItem('drink_records_2026', JSON.stringify(allRecords));
-            document.getElementById('shop-name').value = ''; document.getElementById('item-name').value = ''; document.getElementById('price').value = '';
-            renderCalendar(); renderList(); updateStats();
-        }
-
-        function deleteRecord(id) { allRecords = allRecords.filter(r=>r.id!==id); localStorage.setItem('drink_records_2026', JSON.stringify(allRecords)); renderCalendar(); renderList(); updateStats(); }
-
         function renderList() {
             const container = document.getElementById('list-container');
-            container.innerHTML = allRecords.length === 0 ? `<div class="py-20 text-center text-slate-300">目前尚無紀錄</div>` : 
-                `<div class="divide-y divide-slate-50">${allRecords.map(r=>`<div class="p-6 flex justify-between items-center"><div><h4 class="font-bold">${r.itemName}</h4><p class="text-xs text-slate-400">${r.shopName} · ${r.ice}/${r.sugar}</p></div><div class="flex items-center gap-4"><span class="font-black text-lg">$${r.price}</span><button onclick="deleteRecord(${r.id})" class="text-slate-200 hover:text-red-500"><i data-lucide="trash-2" class="w-5 h-5"></i></button></div></div>`).join('')}</div>`;
+            const sorted = [...records].sort((a,b) => new Date(b.date) - new Date(a.date));
+            container.innerHTML = sorted.length ? sorted.map(r => `
+                <div class="bg-white p-5 rounded-3xl shadow-sm border border-slate-50 flex items-center justify-between">
+                    <div class="flex items-center gap-4">
+                        <div class="bg-slate-100 text-slate-600 w-10 h-10 rounded-xl flex flex-col items-center justify-center font-bold">
+                            <span class="text-[7px] opacity-50 uppercase">${new Date(r.date).getFullYear()}</span>
+                            <span class="text-xs leading-none">${new Date(r.date).getMonth()+1}/${new Date(r.date).getDate()}</span>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-slate-800">${r.item}</h4>
+                            <p class="text-[10px] text-slate-400 font-medium">${r.shop} · ${r.ice}/${r.sugar}</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <span class="font-black text-lg text-slate-600">$${r.price}</span>
+                        <button onclick="deleteRecord(${r.id})" class="text-slate-200 hover:text-red-400 transition-colors"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                    </div>
+                </div>`).join('') : '<div class="p-20 text-center text-slate-300 font-bold">暫無紀錄</div>';
             lucide.createIcons();
         }
 
-        function updateStats() {
-            const today = allRecords.filter(r=>r.date===selectedDateString).reduce((s,r)=>s+r.price, 0);
-            const month = allRecords.filter(r=>new Date(r.date).getMonth()===currentDate.getMonth()).reduce((s,r)=>s+r.price, 0);
-            document.getElementById('today-total').innerText = `$${today}`;
-            document.getElementById('month-total').innerText = `$${month}`;
+        function saveRecord() {
+            const shop = document.getElementById('shop-name').value;
+            const item = document.getElementById('item-name').value;
+            const price = document.getElementById('price').value;
+            if(!shop || !item || price === "") return;
+            records.unshift({ id: Date.now(), date: selectedDateStr, shop, item, price: Number(price), ice, sugar });
+            localStorage.setItem('drink_pro_v3', JSON.stringify(records));
+            document.getElementById('shop-name').value = document.getElementById('item-name').value = document.getElementById('price').value = '';
+            init();
+        }
+
+        function deleteRecord(id) {
+            if(confirm('確定要刪除嗎？')) {
+                records = records.filter(r => r.id !== id);
+                localStorage.setItem('drink_pro_v3', JSON.stringify(records));
+                init();
+            }
+        }
+
+        function updateDashboard() {
+            const todayCount = records.filter(r => r.date === selectedDateStr).length;
+            const thisMonthCount = records.filter(r => {
+                const d = new Date(r.date);
+                return d.getMonth() === viewDate.getMonth() && d.getFullYear() === viewDate.getFullYear();
+            }).length;
+            document.getElementById('today-count').innerText = `${todayCount} 杯`;
+            document.getElementById('month-label').innerText = `${viewDate.getMonth()+1}月 累計`;
+            document.getElementById('month-count').innerText = `${thisMonthCount} 杯`;
+            document.getElementById('year-stats-title').innerText = viewDate.getFullYear();
+            document.getElementById('shop-stats-title').innerText = viewDate.getFullYear();
+        }
+
+        function updateDisplayDate() { 
+            document.getElementById('display-date').innerText = new Date(selectedDateStr).toLocaleDateString('zh-TW', {year:'numeric', month:'long', day:'numeric', weekday:'short'}); 
+        }
+
+        function changeMonth(v) { viewDate.setMonth(viewDate.getMonth()+v); init(); }
+
+        function initCharts() {
+            if(yearBarChart) yearBarChart.destroy();
+            if(shopPieChart) shopPieChart.destroy();
+            if(monthLineChart) monthLineChart.destroy();
+            const common = { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } };
+            monthLineChart = new Chart(document.getElementById('monthLineChart'), {
+                type: 'line',
+                data: { labels: [], datasets: [{ data: [], borderColor: '#2563eb', backgroundColor: 'rgba(37, 99, 235, 0.1)', fill: true, tension: 0.4, pointRadius: 2 }] },
+                options: { ...common, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } }, x: { grid: { display: false } } } }
+            });
+            yearBarChart = new Chart(document.getElementById('yearBarChart'), {
+                type: 'bar',
+                data: { labels: [], datasets: [{ data: [], backgroundColor: '#64748b', borderRadius: 4 }] },
+                options: { ...common, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } }, x: { grid: { display: false } } } }
+            });
+            shopPieChart = new Chart(document.getElementById('shopPieChart'), {
+                type: 'pie',
+                data: { labels: [], datasets: [{ data: [], backgroundColor: ['#1e40af', '#3b82f6', '#94a3b8', '#cbd5e1', '#f1f5f9'] }] },
+                options: { ...common, plugins: { legend: { display: true, position: 'bottom', labels: { boxWidth: 10, font: { size: 11 } } } } }
+            });
+        }
+
+        function updateCharts() {
+            const currentYear = viewDate.getFullYear();
+            const currentMonth = viewDate.getMonth();
+            const days = new Date(currentYear, currentMonth + 1, 0).getDate();
+            const mData = new Array(days).fill(0);
+            records.forEach(r => {
+                const d = new Date(r.date);
+                if(d.getMonth() === currentMonth && d.getFullYear() === currentYear) mData[d.getDate()-1]++;
+            });
+            monthLineChart.data.labels = Array.from({length: days}, (_, i) => i+1);
+            monthLineChart.data.datasets[0].data = mData;
+            monthLineChart.update();
+            const yData = new Array(12).fill(0);
+            records.forEach(r => {
+                const d = new Date(r.date);
+                if(d.getFullYear() === currentYear) yData[d.getMonth()]++;
+            });
+            yearBarChart.data.labels = ['1','2','3','4','5','6','7','8','9','10','11','12'];
+            yearBarChart.data.datasets[0].data = yData;
+            yearBarChart.update();
+            const sMap = {};
+            records.forEach(r => {
+                const d = new Date(r.date);
+                if(d.getFullYear() === currentYear) sMap[r.shop] = (sMap[r.shop] || 0) + 1;
+            });
+            const topS = Object.entries(sMap).sort((a,b) => b[1]-a[1]).slice(0, 5);
+            shopPieChart.data.labels = topS.map(s => s[0]);
+            shopPieChart.data.datasets[0].data = topS.map(s => s[1]);
+            shopPieChart.update();
         }
     </script>
 </body>
